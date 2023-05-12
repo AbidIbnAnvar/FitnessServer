@@ -32,6 +32,7 @@ const gravatar = require('gravatar');
 const config = require('config')
 const {check, validationResult} = require('express-validator')
 const auth = require("./auth")
+const cookieParser = require("cookie-parser")
 
 
 
@@ -46,6 +47,21 @@ app.use(bodyParser.json());
 app.use(express.json());
 app.use(express.urlencoded({extended:true}))
 app.use(cors({credentials:true,origin:'http://localhost:3000'}));
+app.use(cookieParser())
+
+
+// Middleware to verify JWT token from cookie
+function verifyToken(req, res, next) {
+    const token =req.cookies.jwt_token;
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+    try {
+      const decoded = jwt.verify(token, secret);
+      req.user = decoded;
+      next();
+    } catch (error) {
+      res.status(400).json({ message: 'Invalid token' });
+    }
+  }
 
 // const isAuthenticated =()=> {
 //     if (typeof window=="undefined"){
@@ -85,22 +101,40 @@ app.use(cors({credentials:true,origin:'http://localhost:3000'}));
 // const Profile =require('')
 // const User = require('')
 
-app.get('/user/get',(req, res) => {
-    const token = req.cookies.token;
-    if (!token) {
-        return res.status(401).json({ message: 'Authentication failed. No token provided.' });
-      }
-    // Verify JWT
-  jwt.verify(token, secret, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: 'Authentication failed. Invalid token.' });
-    }
+app.get('/user/get',verifyToken,async (req, res) => {
+  
+    // Retrieve the username from the JWT token
+   const username = req.user.username;
+   const userDoc=await User.findOne({username})
+   res.json(userDoc);
+   
 
-    // Access protected resource with decoded user ID
-    const userId = decoded.userId;
-    const user = User.find((u) => u.id === userId);
-    res.json({ data: `Welcome ${user.username}! This is your protected data.` });
-  });
+ // Use the username to retrieve the user's data
+//  await User.findOne({ username: username }, (err, user) => {
+//    if (err) {
+//      console.error(err);
+//      return res.status(500).json({ message: 'Internal server error' });
+//      }
+//      if (!user) {
+//        return res.status(404).json({ message: 'User not found' });
+//      }
+//      // Return the user's data
+//      res.json({ data: user.data });
+//    });
+   //if (!token) {
+//       return res.status(401).json({ message: 'Authentication failed. No token provided.' });
+//       }
+//     // Verify JWT
+//   jwt.verify(token, secret, (err, decoded) => {
+//     if (err) {
+//       return res.status(401).json({ message: 'Authentication failed. Invalid token.' });
+//     }
+
+//     // Access protected resource with decoded user ID
+//     const userId = decoded.userId;
+//     const user = User.find((u) => u.id === userId);
+//     res.json({ data: `Welcome ${user.username}! This is your protected data.` });
+//   });
 
 
     // try {
@@ -129,6 +163,31 @@ app.get('/user/get',(req, res) => {
     // }
   });
 
+app.patch('/user/details',verifyToken, async(req,res)=>{
+    try{
+        const{username,email,weight,height}=req.body
+        const userDoc=await User.findOne({username})
+        if(userDoc){
+            User.updateOne({username:username},{$set: {email:email,weight:weight, height:height} }) 
+            const NewDoc=await User.findOne({username})
+            res.json(NewDoc)
+            const token = jwt.sign(
+                NewDoc, 
+                secret,
+                {expiresIn: 360000})
+            res.cookie('jwt_token', token,{
+                    httpOnly:true
+                });
+
+        } else {
+            res.json("User not found")
+        }
+
+    } catch(err){
+        res.json("Error",err)
+    }
+})
+
 
 app.post("/login", async(req,res)=>{
     const{username,password}=req.body
@@ -143,8 +202,10 @@ app.post("/login", async(req,res)=>{
             //         username:userDoc.username,}
             //        )}
                     )
-        res.cookie('token', token);
-        res.json({'token':token})
+        res.cookie('jwt_token', token,{
+            httpOnly:true
+        });
+        res.json("token added")
 
 
     } else{
@@ -173,6 +234,17 @@ app.post("/login", async(req,res)=>{
         
     // }
 })
+
+app.get("/login", (req, res) => {
+    const{username,password}=req.body
+    const token = jwt.sign({username,password}, secret);
+    return res
+      .cookie("access_token", token, {
+        httpOnly: true
+      })
+      .status(200)
+      .json({ message: "Logged in successfully" });
+  }); 
 
 //signup
 
@@ -214,7 +286,7 @@ app.post("/signup",[
             }
         }
 
-        jwt.sign(
+        const token = jwt.sign(
             payload, 
             secret,
             {expiresIn: 360000},
@@ -222,6 +294,10 @@ app.post("/signup",[
                 if(err) throw err;
                 res.json({token})
             })
+        res.cookie('jwt_token', token,{
+              httpOnly:true
+          });
+        
 
 
     } catch(err){
@@ -272,7 +348,8 @@ app.post("/signup",[
 })
 
 app.post('/logout', (req,res) => {
-    res.cookie('token','').json('ok')
+    res.cookie('jwt_token','')
+    res.json('ok')
 })
 
 app.listen(8080,()=>{
