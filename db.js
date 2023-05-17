@@ -44,30 +44,30 @@ async function run() {
 }
 run().catch(console.dir);
 
-const newSchema = new mongoose.Schema({
-    username:{
-        type:String,
-        required:true
-    },
-    email:{
-        type:String,
-        required:true
-    },
-    password:{
-        type:String,
-        required:true
-    }
-})
+// const newSchema = new mongoose.Schema({
+//     username:{
+//         type:String,
+//         required:true
+//     },
+//     email:{
+//         type:String,
+//         required:true
+//     },
+//     password:{
+//         type:String,
+//         required:true
+//     }
+// })
 
-async function connect() {
+async function connectToUser() {
   const client = await MongoClient.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
   const db = client.db('User');
   const collection = db.collection('User');
   return collection;
 }
 
-module.exports = connect;
+module.exports = connectToUser;
 
-const collection = mongoose.model("collection", newSchema)
+// const collection = mongoose.model("collection", newSchema)
 
-module.exports = collection
+// module.exports = collection
