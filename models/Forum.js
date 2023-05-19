@@ -6,7 +6,9 @@ const ForumSchema = new mongoose.Schema({
     username: {type: String, required: true}, 
     message:{type: String, required: true},
     likes:{type:Number},
-    dislikes:{type:Number}
+    dislikes:{type:Number},
+    date:{type:String},
+    time:{type:String}
 })
 ForumSchema.index({ no: 1 }, { unique: true });
 
