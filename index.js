@@ -8,6 +8,7 @@ const router = express.Router();
 const User = require('./models/User');
 const Forum = require('./models/Forum')
 const Workout = require('./models/Workout')
+const Fit = require('./models/FIT_Workout')
 const bcrypt= require('bcryptjs')
 const jwt = require('jsonwebtoken');
 const gravatar = require('gravatar');
@@ -19,13 +20,13 @@ const cookieParser = require("cookie-parser")
 const salt = bcrypt.genSaltSync(10);
 const secret = 'sadjjasidj813498109d@U841209312$132123'
 
-router.use(bodyParser.urlencoded({ extended: true }));
+router.use(bodyParser.urlencoded({limit:'1000mb', extended: true }));
 mongoose.connect("mongodb+srv://abidb220004cs:B220004CS@cluster0.faiyfm0.mongodb.net/User?retryWrites=true&w=majority")
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit:'1000mb'}));
 app.use(express.json());
 app.use(express.urlencoded({extended:true}))
-app.use(cors({credentials:true,origin:'http://localhost:3000'}));
+app.use(cors({ credentials: true, origin: '*' }));
 app.use(cookieParser())
 
 function verifyToken(req, res, next) {
@@ -46,9 +47,6 @@ app.get('/user/get',verifyToken,async (req, res) => {
    const username = req.user.username;
    const userDoc=await User.findOne({username})
    res.json(userDoc);
-   
-
-
   });
 
 app.patch('/user/details', async(req,res)=>{
@@ -211,13 +209,17 @@ app.delete('/user/delete-post', async(req,res)=>{
 
 app.post('/user/add-workout',async(req,res)=>{
     try {
-        const {username,workoutName,workoutReps,workoutDuration,workoutCalories,date}=req.body
+        const {username,workoutName,workoutReps,workoutDuration,workoutCalories,date,fileIdMesgs,eventMesgs,recordMesgs,sessionMesgs}=req.body
         if(workoutReps){
             const workout = new Workout({username:username,workout_name:workoutName,workout_reps:workoutReps,workout_calories:workoutCalories,date:date})
             const savedWorkout = await workout.save();
             res.status(200).json(savedWorkout);
         } else if(workoutDuration){
             const workout = new Workout({username:username,workout_name:workoutName,workout_duration:workoutDuration,workout_calories:workoutCalories,date:date})
+            const savedWorkout = await workout.save();
+            res.status(200).json(savedWorkout);
+        } else if(fileIdMesgs){
+            const workout = new Workout({username:username,fileIdMesgs:fileIdMesgs,eventMesgs:eventMesgs,recordMesgs:recordMesgs,sessionMesgs:sessionMesgs})
             const savedWorkout = await workout.save();
             res.status(200).json(savedWorkout);
         } else {

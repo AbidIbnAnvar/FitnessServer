@@ -1,13 +1,7 @@
 const mongoose = require('mongoose');
 const {Schema,model} = mongoose;
 
-const WorkoutSchema = new mongoose.Schema({
-    username: {type: String, required: true, min: 4},
-    workout_name:{type:String, required:false},
-    workout_reps:{type:Number},
-    workout_duration:{type:Number},
-    workout_calories:{type:Number}, 
-    date:{type:String},
+const FITSchema = new mongoose.Schema({
     fileIdMesgs:{
         type: Object,
         required:false
@@ -24,8 +18,8 @@ const WorkoutSchema = new mongoose.Schema({
         type: Object,
         required:false
     }
-})
+},{timestamps: true})
 
-const WorkoutModel = model('Workout', WorkoutSchema);
+const FitModel = model('Fit', FITSchema);
 
-module.exports = WorkoutModel;
+module.exports = FitModel;
